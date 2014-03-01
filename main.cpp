@@ -1,14 +1,16 @@
 #include <QCoreApplication>
 #include <iostream>
+#include "server.h"
 
 using namespace std;
 
 int main(int argc, char *argv[])
 {
-    //QCoreApplication a(argc, argv);
+    QCoreApplication a(argc, argv);
 
-    cout << "Hello World!!!\n";
+    cout << "---- Server Started ---\n";
+    Server myServer;
+    //myServer.listen();
 
-    return 0;
-    //return a.exec();
+    return a.exec();
 }
