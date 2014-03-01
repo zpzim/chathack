@@ -4,17 +4,14 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT       += core network
 
 TARGET = chathack
 TEMPLATE = app
-
+CONFIG += console
+CONFIG -= app_bundle;
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+    client.cpp
 
-HEADERS  += mainwindow.h
-
-FORMS    += mainwindow.ui
+HEADERS  += client.h

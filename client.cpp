@@ -1,0 +1,173 @@
+#include "client.h"
+
+#include <vector>
+#include <string>
+#include <iostream>
+
+const QHostAddress DEFAULT_HOST("169.235.31.7");
+const quint16 DEFAULT_PORT = 6499;
+const quint16 BLOCK_SIZE = 20;
+const int NUM_VALID_MSGS = 6;
+const QString validMsgs[NUM_VALID_MSGS] = {"clogin", "cjoin", "clogout", "cexit", "culroom", "csmroom" };
+
+
+
+Client::Client(QObject *parent) :
+    QObject(parent), micOn(false)
+{
+    tcpSocket = new QTcpSocket(this);
+    blockSize = BLOCK_SIZE;
+    connect(tcpSocket, SIGNAL(disconnected()), this, SLOT(exit()));
+    connect(tcpSocket, SIGNAL(bytesWritten(qint64)), this, SLOT(ReadSocket()));
+
+}
+
+
+void Client::login(QString Cname, QString Rname)
+{
+    tcpSocket -> connectToHost(DEFAULT_HOST, DEFAULT_PORT);
+    if(!tcpSocket -> waitForConnected())
+    {
+        std::cout << "ConnectionTimeout" << std::endl;
+        //emit ConnectionTimeout();
+        return;
+    }
+    else
+    {
+        std::cout << "Connected To Host" << std::endl;
+        //emit connected();
+    }
+    QString msg("slogin|" + Rname+ '|' + Cname + "|slogin\n");
+    std::cout << msg.toStdString() << std::endl;
+    int test = tcpSocket -> write(msg.toLatin1(), msg.length());
+
+    QString recieved = "";
+    std::cout << "test = " << test << "Entering wait loop" << std::endl;
+    while(!hasCompleteMsg(recieved))
+    {
+        sleep(1);
+
+        //ReadSocket();
+    }
+    std::cout << "Exiting wait loop" << std::endl;
+    if(recieved != "clogin")
+    {
+        std::cout << "Server Response Error" << std::endl;
+        //emit ServerResponseError(); //Will probably never happen Server should respond correctly...
+        cur_args.clear();
+        return;
+    }
+    std::vector<QString> recieved_args;
+    for (int i = 1; i < cur_args.size(); ++i)
+    {
+        if(cur_args[i] != "clogin")
+        {
+               recieved_args.push_back(cur_args[i]);
+        }
+        else
+        {
+            break;
+        }
+    }
+    if(recieved_args.size() != 3)
+    {
+        std::cout << "Server response error" << endl;
+        //emit ServerResponseError();
+        cur_args.clear();
+        return;
+    }
+    if(recieved_args[2] == "1")
+    {
+      //  std::cout << "LOGIN SUCCESS: " << recieved_args[0] << std::endl;
+        //emit LoginSuccess(recieved_args[0]);
+    }
+    else
+        std::cout << "Login Failure" << std::endl;
+        //emit LoginFailure();
+
+    cur_args.clear();
+
+}
+
+
+void Client::logout()
+{
+    tcpSocket -> disconnectFromHost();
+    if(!tcpSocket -> waitForDisconnected())
+    {
+        //Force Connection Close
+        tcpSocket -> close();
+        std::cout << "Forced Disconnect" << endl;
+        //emit ForcedDisconnect();
+    }
+    std::cout << "Disconnected" << endl;
+    //emit disconnected();
+
+}
+
+void Client::exit()
+{
+    //Force Connection Close
+    tcpSocket -> close();
+    std::cout << "Disconnected" << endl;
+    //emit disconnected();
+}
+
+void Client::ReadSocket()
+{
+    QDataStream in(tcpSocket);
+    in.setVersion(QDataStream::Qt_4_0);
+
+
+    if (tcpSocket->bytesAvailable() < blockSize)
+        return;
+
+    char * nextRead = "";
+    in.readRawData(nextRead, blockSize);
+    QString temp(nextRead);
+    ParseMessage(temp);
+}
+
+void Client::ParseMessage(QString &msg)
+{
+      QString cur_arg = "";
+      for(int i = 0; i < blockSize; ++i)
+      {
+          if(msg[i] != '|')
+            cur_arg += msg[i];
+          else
+          {
+             cur_args.push_back(cur_arg);
+             cur_arg = "";
+          }
+      }
+      msg = "";
+}
+
+bool Client::hasCompleteMsg(QString &result)
+{
+    if(!cur_args.size() >= 2 && cur_args[0] == cur_args[cur_args.size() - 1])
+    {
+        for(int i = 0; i < NUM_VALID_MSGS; ++i)
+        {
+            if( validMsgs[i] == cur_args[0])
+            {
+                result = validMsgs[i];
+                return true;
+            }
+        }
+    }
+    result = "";
+    return false;
+}
+
+void Client::start_run(QString n1, QString n2)
+{
+    emit LOGIN(n1, n2);
+    while(1)
+    {
+        sleep(1);
+    }
+
+
+}
