@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core network
+QT       += core network sql
 
 QT       -= gui
 
@@ -17,8 +17,10 @@ TEMPLATE = app
 
 SOURCES += main.cpp \
     server.cpp \
-    logwriter.cpp
+    logwriter.cpp \
+    database.cpp
 
 HEADERS += \
     server.h \
-    logwriter.h
+    logwriter.h \
+    database.h
